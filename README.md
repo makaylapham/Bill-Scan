@@ -1,15 +1,14 @@
-# Bill Scanning API
+# Purchase Tracking API
 
-A Flask-based REST API that processes images of bills/receipts and extracts relevant information using OCR (Optical Character Recognition). Users can upload photos of their bills through the mobile app, and the API will extract and store the bill details.
+A Flask-based REST API for tracking purchases and automatically managing user points. Partners can send real-time transaction data to credit points to users' accounts.
 
 ## Features
 
-- Image upload and processing
-- OCR text extraction from bills
-- Data parsing for common bill formats
-- Extracted information storage
-- Historical bill tracking
-- Support for multiple image formats (JPEG, PNG, HEIC)
+- User account management
+- Real-time transaction processing
+- Automatic point calculation
+- Partner-specific point rates
+- Transaction history tracking
 
 ## Setup
 
@@ -24,14 +23,7 @@ source .venv/bin/activate  # On Windows, use: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
-```bash
-# Create a .env file with your configuration
-TESSDATA_PREFIX=/usr/local/share/tessdata  # Path to Tesseract OCR data
-STORAGE_PATH=./uploads                      # Path to store uploaded images
-```
-
-4. Run the application:
+3. Run the application:
 ```bash
 python app.py
 ```
@@ -40,151 +32,103 @@ The API will be available at `http://localhost:5000`
 
 ## API Endpoints
 
-### Bill Processing
+### Users
 
-#### Upload and scan a bill
+#### Create a new user
 ```
-POST /bills/scan
-Content-Type: multipart/form-data
+POST /users
+Content-Type: application/json
 
-Parameters:
-- image: File (required) - The bill image file
-- user_id: String (required) - ID of the user uploading the bill
-- scan_type: String (optional) - Type of bill (utility, restaurant, retail)
-```
-
-#### Get processed bill details
-```
-GET /bills/<bill_id>
+{
+    "name": "John Doe",
+    "email": "john@example.com"
+}
 ```
 
-#### Get user's bill history
+#### Get user details
 ```
-GET /bills/user/<user_id>
-```
-
-### Image Management
-
-#### Get original bill image
-```
-GET /bills/<bill_id>/image
+GET /users/<user_id>
 ```
 
-#### Get processed bill image (with highlights)
+### Transactions
+
+#### Record a new transaction
 ```
-GET /bills/<bill_id>/image/processed
+POST /transactions
+Content-Type: application/json
+
+{
+    "user_id": "user_id_here",
+    "partner_id": "partner1",
+    "amount": 100.00,
+    "transaction_reference": "ORDER123"
+}
 ```
 
-## Supported Bill Types
+#### Get user's transaction history
+```
+GET /transactions/user/<user_id>
+```
 
-- Restaurant receipts
-- Utility bills
-- Retail receipts
-- Grocery receipts
-- Service invoices
+### Points Rules
 
-## Extracted Information
+#### Get current point rules
+```
+GET /points/rules
+```
 
-The API attempts to extract the following information from bills:
+#### Update partner point rate
+```
+POST /points/rules/partner
+Content-Type: application/json
 
-- Merchant name and details
-- Date and time of purchase
-- Total amount
-- Individual item details (when available)
-- Tax amounts
-- Payment method
-- Receipt/bill number
+{
+    "partner_id": "partner1",
+    "points_rate": 2.5
+}
+```
+
+## Point Calculation Rules
+
+- Default rate: 1 point per dollar
+- Partner-specific rates:
+  - partner1: 2 points per dollar
+  - partner2: 1.5 points per dollar
 
 ## Example Usage
 
-1. Upload and scan a bill:
+1. Create a new user:
 ```bash
-curl -X POST http://localhost:5000/bills/scan \
-    -F "image=@path/to/bill.jpg" \
-    -F "user_id=USER_ID" \
-    -F "scan_type=restaurant"
+curl -X POST http://localhost:5000/users \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "John Doe",
+        "email": "john@example.com"
+    }'
 ```
 
-2. Get processed bill details:
+2. Record a purchase:
 ```bash
-curl http://localhost:5000/bills/BILL_ID
+curl -X POST http://localhost:5000/transactions \
+    -H "Content-Type: application/json" \
+    -d '{
+        "user_id": "USER_ID",
+        "partner_id": "partner1",
+        "amount": 100.00,
+        "transaction_reference": "ORDER123"
+    }'
 ```
 
-3. Get user's bill history:
+3. Check user's points:
 ```bash
-curl http://localhost:5000/bills/user/USER_ID
+curl http://localhost:5000/users/USER_ID
 ```
-
-## Mobile App Integration
-
-The API is designed to work with mobile apps. Here are some integration tips:
-
-1. Image Guidelines:
-   - Ensure good lighting
-   - Capture the entire bill
-   - Avoid blurry images
-   - Recommended resolution: 1080p or higher
-
-2. Error Handling:
-   - Handle network timeouts
-   - Implement retry logic
-   - Cache images locally before upload
-   - Show processing status to users
-
-3. Security:
-   - Implement user authentication
-   - Use HTTPS for all requests
-   - Don't store sensitive bill data locally
 
 ## Development Notes
 
-This is a development version. For production use, consider:
-
-### Security Considerations
-- Implementing user authentication
-- Adding API key validation
-- Encrypting sensitive bill data
-- Implementing rate limiting
-- Adding request validation
-
-### Performance Optimizations
-- Image compression before upload
-- Caching processed results
-- Background job processing
-- Load balancing for high traffic
-
-### Storage Considerations
-- Cloud storage for images
-- Database for extracted data
-- Regular backups
-- Data retention policies
-
-### Additional Features to Consider
-- PDF bill support
-- Multiple currency support
-- Export functionality
-- Expense categorization
-- Budget tracking integration
-- Machine learning for improved accuracy
-
-## Troubleshooting
-
-Common issues and solutions:
-
-1. Poor OCR Results:
-   - Ensure good image quality
-   - Check lighting conditions
-   - Verify image is not skewed
-   - Confirm bill format is supported
-
-2. Upload Errors:
-   - Check file size limits
-   - Verify supported file formats
-   - Ensure stable network connection
-   - Validate user credentials
-
-3. Processing Errors:
-   - Check server logs
-   - Verify OCR service status
-   - Ensure sufficient storage space
-   - Validate input parameters
+This is a development version using in-memory storage. For production use, consider:
+- Adding a proper database
+- Implementing authentication
+- Adding input validation
+- Adding rate limiting
+- Adding logging and monitoring 
